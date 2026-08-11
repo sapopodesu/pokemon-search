@@ -4,11 +4,11 @@ import streamlit as st
 # 画面のタイトル・レイアウト設定
 st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
 
-# タイトルをクリックすると初期状態のURLにリセットして移動するリンク
+# ① タイトルリンク（href="/" にすることでどんなURLでも確実にトップに戻ります）
 st.markdown(
     """
     <h1>
-        <a href="https://pokemon-search.streamlit.app/" target="_self" style="color: inherit; text-decoration: none;">
+        <a href="/" target="_self" style="color: inherit; text-decoration: none;">
             🔍 ポケモン構築記事 検索
         </a>
     </h1>
@@ -19,19 +19,23 @@ st.markdown(
 st.write("シーズンの範囲指定やキーワード入力で検索できます。")
 
 
-# 本文からキーワードの前後を抜き出す関数
+# ② 本文からキーワードの前後を抜き出す関数（スニペット機能）
 def get_snippet(text, keyword, snippet_length=120):
   if not isinstance(text, str) or not text:
     return ""
 
+  # キーワード未入力の場合は冒頭120文字を表示
   if not keyword:
     return text[:snippet_length] + ("..." if len(text) > snippet_length else "")
 
+  # キーワードの位置を探す
   idx = text.lower().find(keyword.lower())
 
+  # タイトルのみヒットした等の場合は冒頭を表示
   if idx == -1:
     return text[:snippet_length] + ("..." if len(text) > snippet_length else "")
 
+  # キーワードの前後を計算して切り抜く（前40文字〜後80文字）
   start = max(0, idx - 40)
   end = min(len(text), idx + len(keyword) + 80)
 
@@ -54,20 +58,19 @@ def load_data():
 try:
   df = load_data()
 
-  # シーズンの一覧を取得してソート（重複排除）
+  # シーズンの一覧を取得してソート
   unique_seasons = sorted([s for s in df["season"].dropna().unique()])
 
   filtered_df = df.copy()
 
-  # ① シーズン範囲選択スライダー
+  # ③ シーズン範囲選択スライダー
   if len(unique_seasons) > 1:
     start_season, end_season = st.select_slider(
         "シーズン範囲を選択:",
         options=unique_seasons,
-        value=(unique_seasons[0], unique_seasons[-1]),  # 初期値は「全範囲」
+        value=(unique_seasons[0], unique_seasons[-1]),
     )
 
-    # 選択された範囲内のシーズンのみを抽出
     start_idx = unique_seasons.index(start_season)
     end_idx = unique_seasons.index(end_season)
     selected_range = unique_seasons[start_idx : end_idx + 1]
@@ -76,7 +79,7 @@ try:
   elif len(unique_seasons) == 1:
     st.info(f"対象シーズン: **{unique_seasons[0]}**")
 
-  # ② キーワード入力欄
+  # ④ キーワード入力欄
   keyword = st.text_input(
       "検索キーワード（例: カイリュー、サイクル、最終1位）:"
   )
@@ -87,7 +90,7 @@ try:
         | filtered_df["text"].str.contains(keyword, case=False, na=False)
     ]
 
-  # ③ 検索結果の表示
+  # ⑤ 検索結果の表示
   st.markdown("---")
   st.write(f"### 検索結果: **{len(filtered_df)}** 件")
 
@@ -95,6 +98,7 @@ try:
     st.subheader(f"[{row['season']}] {row['title']}")
     st.markdown(f"🔗 [記事を読む]({row['url']})")
 
+    # スニペット（抜き出し）を表示
     if pd.notna(row["text"]):
       snippet = get_snippet(str(row["text"]), keyword)
       st.caption(snippet)
