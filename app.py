@@ -5,7 +5,7 @@ import streamlit as st
 # 画面のタイトル・レイアウト設定
 st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
 
-# ① タイトルリンク（クリックで初期ページへ）
+# ① タイトルリンク（クリックで初期ページへリセット）
 st.markdown(
     """
     <h1>
@@ -24,9 +24,8 @@ st.write("シーズンの範囲指定やキーワード入力で検索できま�
 def highlight_text(text, keyword):
   if not keyword or not isinstance(text, str):
     return text
-  # 記号などのエスケープ処理と大文字小文字を区別しない置換
   pattern = re.escape(keyword)
-  return re.sub(f'({pattern})', r'**\1**', text, flags=re.IGNORECASE)
+  return re.sub(f"({pattern})", r"**\1**", text, flags=re.IGNORECASE)
 
 
 # ③ 本文からキーワードの前後を抜き出す関数（スニペット機能）
@@ -100,7 +99,21 @@ try:
   st.markdown("---")
   st.write(f"### 検索結果: **{len(filtered_df)}** 件")
 
-  for idx, row in filtered_df.iterrows():
+  # Amazonアフィリエイトリンクの設定
+  AMAZON_URL = "https://amzn.to/4wjABDy"
+
+  # 5件ごとに挿入するスポンサー枠のデザイン
+  ad_html = f"""
+    <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin: 10px 0; text-align: center;">
+        <p style="margin: 0 0 4px 0; font-size: 0.8em; color: #6c757d;">スポンサーリンク</p>
+        <a href="{AMAZON_URL}" target="_blank" style="text-decoration: none; font-weight: bold; color: #ff9900; font-size: 1.05em;">
+            🎮 【Amazon】人気のポケモン関連グッズ・ゲームソフトをチェック！
+        </a>
+    </div>
+    """
+
+  # 検索結果をループ表示（enumerateで件数をカウント）
+  for i, (idx, row) in enumerate(filtered_df.iterrows()):
     # タイトル内のキーワードを太字化
     display_title = highlight_text(str(row["title"]), keyword)
     st.subheader(f"[{row['season']}] {display_title}")
@@ -114,6 +127,11 @@ try:
       st.caption(highlighted_snippet)
 
     st.divider()
+
+    # 5件ごとにAmazonアフィリンクを表示
+    if (i + 1) % 5 == 0:
+      st.markdown(ad_html, unsafe_allow_html=True)
+      st.divider()
 
 except Exception as e:
   st.error(
