@@ -1,4 +1,3 @@
-import random
 import re
 import pandas as pd
 import streamlit as st
@@ -40,7 +39,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("※当サイトはアフィリエイト広告を利用しています。")
 st.write("キーワード入力で記事のタイトル・本文から一括検索できます。")
 
 
@@ -117,28 +115,8 @@ try:
   st.markdown("---")
   st.write(f"### 検索結果: **{len(filtered_df)}** 件")
 
-  # 対戦勢向けおすすめ便利ギアリスト（ランダム広告用）
-  TOOL_LIST = [
-      {
-          "text": "🎮 自動金策・努力値振りに！対戦勢愛用の連射コントローラー",
-          "url": "https://amzn.to/4wjABDy",
-      },
-      {
-          "text": "🔋 長時間のランクマ・オフ会に！持ち運べるモバイルバッテリー",
-          "url": "https://amzn.to/4wjABDy",
-      },
-      {
-          "text": "🖊️ ダメ計入力・メモの効率UP！スマホ・タブレット用タッチペン",
-          "url": "https://amzn.to/4wjABDy",
-      },
-      {
-          "text": "🎧 集中して対戦したい時に！ノイズキャンセリングイヤホン",
-          "url": "https://amzn.to/4wjABDy",
-      },
-  ]
-
   # 記事リストのループ表示
-  for i, (idx, row) in enumerate(filtered_df.iterrows()):
+  for idx, row in filtered_df.iterrows():
     season_prefix = (
         f"[{row['season']}] "
         if ("season" in row and pd.notna(row["season"]))
@@ -156,28 +134,10 @@ try:
 
     st.divider()
 
-    # 5件ごとにランダム広告カードを表示
-    if (i + 1) % 5 == 0:
-      selected_tool = random.choice(TOOL_LIST)
-      ad_html = f"""
-            <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
-                <p style="margin: 0 0 8px 0; font-size: 0.8em; color: #6c757d; font-weight: bold;">💡 対戦勢におすすめ！便利ツール紹介</p>
-                <a href="{selected_tool['url']}" target="_blank" style="text-decoration: none; font-weight: bold; color: #007bff; font-size: 1.1em; display: inline-block; padding: 8px 16px; border: 2px solid #007bff; border-radius: 20px;">
-                    {selected_tool['text']}
-                </a>
-                <p style="margin: 8px 0 0 0; font-size: 0.7em; color: #adb5bd;">（Amazonアソシエイトへ移動します）</p>
-            </div>
-            """
-      st.markdown(ad_html, unsafe_allow_html=True)
-      st.divider()
-
   # サイトフッター注記
   st.markdown("---")
   st.caption(
       "※本サイトは各ブログ・記事の検索サービスであり、著作権は各著作者に帰属します。"
-  )
-  st.caption(
-      "※Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。"
   )
 
 except Exception as e:
