@@ -1,20 +1,34 @@
+import random
 import re
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
-# 画面のタイトル・レイアウト設定
+# 画面設定
 st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-8RE88QPRYD"></script>
+
+# --------------------------------------------------
+# 📊 Google アナリティクス (GA4) 埋め込み
+# --------------------------------------------------
+GA_MEASUREMENT_ID = "G-8RE88QPRYD"
+
+ga_html = f"""
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
+  function gtag(){{dataLayer.push(arguments);}}
   gtag('js', new Date());
-
-  gtag('config', 'G-8RE88QPRYD');
+  gtag('config', '{GA_MEASUREMENT_ID}');
 </script>
+"""
+components.html(ga_html, height=0, width=0)
+
 # --------------------------------------------------
-# ① タイトルリンク（クリックで初期ページへリセット）
+# 🔍 ポケモン構築記事 検索アプリ メイン処理
+# --------------------------------------------------
+
+# タイトル
 st.markdown(
     """
     <h1>
@@ -26,10 +40,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.write("シーズンの範囲指定やキーワード入力で検索できます。")
+st.caption("※当サイトはアフィリエイト広告を利用しています。")
+st.write("キーワード入力で記事のタイトル・本文から一括検索できます。")
 
 
-# ② キーワード箇所を太字（**文字**）に置換する関数
+# キーワードハイライト関数
 def highlight_text(text, keyword):
   if not keyword or not isinstance(text, str):
     return text
@@ -37,33 +52,29 @@ def highlight_text(text, keyword):
   return re.sub(f"({pattern})", r"**\1**", text, flags=re.IGNORECASE)
 
 
-# ③ 本文からキーワードの前後を抜き出す関数（スニペット機能）
+# 本文スニペット抽出関数
 def get_snippet(text, keyword, snippet_length=120):
   if not isinstance(text, str) or not text:
     return ""
-
   if not keyword:
     return text[:snippet_length] + ("..." if len(text) > snippet_length else "")
 
   idx = text.lower().find(keyword.lower())
-
   if idx == -1:
     return text[:snippet_length] + ("..." if len(text) > snippet_length else "")
 
   start = max(0, idx - 40)
   end = min(len(text), idx + len(keyword) + 80)
-
   snippet = text[start:end]
 
   if start > 0:
     snippet = "..." + snippet
   if end < len(text):
     snippet = snippet + "..."
-
   return snippet
 
 
-# CSVデータの読み込み
+# CSVデータ読み込み
 @st.cache_data
 def load_data():
   return pd.read_csv("articles.csv")
@@ -71,76 +82,103 @@ def load_data():
 
 try:
   df = load_data()
-
-  # シーズンの一覧を取得してソート
-  unique_seasons = sorted([s for s in df["season"].dropna().unique()])
-
   filtered_df = df.copy()
 
-  # ④ シーズン範囲選択スライダー
-  if len(unique_seasons) > 1:
-    start_season, end_season = st.select_slider(
-        "シーズン範囲を選択:",
-        options=unique_seasons,
-        value=(unique_seasons[0], unique_seasons[-1]),
-    )
+  # シーズン列があればスライダーを表示
+  if "season" in df.columns:
+    unique_seasons = sorted([s for s in df["season"].dropna().unique()])
+    if len(unique_seasons) > 1:
+      start_season, end_season = st.select_slider(
+          "シーズン範囲を選択:",
+          options=unique_seasons,
+          value=(unique_seasons[0], unique_seasons[-1]),
+      )
+      start_idx = unique_seasons.index(start_season)
+      end_idx = unique_seasons.index(end_season)
+      selected_range = unique_seasons[start_idx : end_idx + 1]
+      filtered_df = filtered_df[filtered_df["season"].isin(selected_range)]
+    elif len(unique_seasons) == 1:
+      st.info(f"対象シーズン: **{unique_seasons[0]}**")
 
-    start_idx = unique_seasons.index(start_season)
-    end_idx = unique_seasons.index(end_season)
-    selected_range = unique_seasons[start_idx : end_idx + 1]
-
-    filtered_df = filtered_df[filtered_df["season"].isin(selected_range)]
-  elif len(unique_seasons) == 1:
-    st.info(f"対象シーズン: **{unique_seasons[0]}**")
-
-  # ⑤ キーワード入力欄
+  # キーワード入力欄
   keyword = st.text_input(
       "検索キーワード（例: カイリュー、サイクル、最終1位）:"
   )
 
   if keyword:
-    filtered_df = filtered_df[
-        filtered_df["title"].str.contains(keyword, case=False, na=False)
-        | filtered_df["text"].str.contains(keyword, case=False, na=False)
-    ]
+    condition = filtered_df["title"].str.contains(keyword, case=False, na=False)
+    if "text" in filtered_df.columns:
+      condition = condition | filtered_df["text"].str.contains(
+          keyword, case=False, na=False
+      )
+    filtered_df = filtered_df[condition]
 
-  # ⑥ 検索結果の表示
+  # 検索結果件数
   st.markdown("---")
   st.write(f"### 検索結果: **{len(filtered_df)}** 件")
 
-  # Amazonアフィリエイトリンクの設定
-  AMAZON_URL = "https://amzn.to/4wjABDy"
+  # 対戦勢向けおすすめ便利ギアリスト（ランダム広告用）
+  TOOL_LIST = [
+      {
+          "text": "🎮 自動金策・努力値振りに！対戦勢愛用の連射コントローラー",
+          "url": "https://amzn.to/4wjABDy",
+      },
+      {
+          "text": "🔋 長時間のランクマ・オフ会に！持ち運べるモバイルバッテリー",
+          "url": "https://amzn.to/4wjABDy",
+      },
+      {
+          "text": "🖊️ ダメ計入力・メモの効率UP！スマホ・タブレット用タッチペン",
+          "url": "https://amzn.to/4wjABDy",
+      },
+      {
+          "text": "🎧 集中して対戦したい時に！ノイズキャンセリングイヤホン",
+          "url": "https://amzn.to/4wjABDy",
+      },
+  ]
 
-  # 5件ごとに挿入するスポンサー枠のデザイン
-  ad_html = f"""
-    <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin: 10px 0; text-align: center;">
-        <p style="margin: 0 0 4px 0; font-size: 0.8em; color: #6c757d;">スポンサーリンク</p>
-        <a href="{AMAZON_URL}" target="_blank" style="text-decoration: none; font-weight: bold; color: #ff9900; font-size: 1.05em;">
-            🎮 【Amazon】人気のポケモン関連グッズ・ゲームソフトをチェック！
-        </a>
-    </div>
-    """
-
-  # 検索結果をループ表示（enumerateで件数をカウント）
+  # 記事リストのループ表示
   for i, (idx, row) in enumerate(filtered_df.iterrows()):
-    # タイトル内のキーワードを太字化
+    season_prefix = (
+        f"[{row['season']}] "
+        if ("season" in row and pd.notna(row["season"]))
+        else ""
+    )
     display_title = highlight_text(str(row["title"]), keyword)
-    st.subheader(f"[{row['season']}] {display_title}")
 
+    st.subheader(f"{season_prefix}{display_title}")
     st.markdown(f"🔗 [記事を読む]({row['url']})")
 
-    # 本文の抜き出し ＋ キーワードの太字化
-    if pd.notna(row["text"]):
+    if "text" in row and pd.notna(row["text"]):
       snippet = get_snippet(str(row["text"]), keyword)
       highlighted_snippet = highlight_text(snippet, keyword)
       st.caption(highlighted_snippet)
 
     st.divider()
 
-    # 5件ごとにAmazonアフィリンクを表示
+    # 5件ごとにランダム広告カードを表示
     if (i + 1) % 5 == 0:
+      selected_tool = random.choice(TOOL_LIST)
+      ad_html = f"""
+            <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
+                <p style="margin: 0 0 8px 0; font-size: 0.8em; color: #6c757d; font-weight: bold;">💡 対戦勢におすすめ！便利ツール紹介</p>
+                <a href="{selected_tool['url']}" target="_blank" style="text-decoration: none; font-weight: bold; color: #007bff; font-size: 1.1em; display: inline-block; padding: 8px 16px; border: 2px solid #007bff; border-radius: 20px;">
+                    {selected_tool['text']}
+                </a>
+                <p style="margin: 8px 0 0 0; font-size: 0.7em; color: #adb5bd;">（Amazonアソシエイトへ移動します）</p>
+            </div>
+            """
       st.markdown(ad_html, unsafe_allow_html=True)
       st.divider()
+
+  # サイトフッター注記
+  st.markdown("---")
+  st.caption(
+      "※本サイトは各ブログ・記事の検索サービスであり、著作権は各著作者に帰属します。"
+  )
+  st.caption(
+      "※Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。"
+  )
 
 except Exception as e:
   st.error(
