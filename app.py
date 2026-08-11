@@ -4,7 +4,29 @@ import streamlit as st
 
 # 画面のタイトル・レイアウト設定
 st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
+import streamlit as st
+import streamlit.components.v1 as components
 
+# 画面設定
+st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
+
+# --------------------------------------------------
+# 📊 Google アナリティクス (GA4) 埋め込み
+# --------------------------------------------------
+GA_MEASUREMENT_ID = "G-8RE88QPRYD"
+
+ga_html = f"""
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{GA_MEASUREMENT_ID}');
+</script>
+"""
+components.html(ga_html, height=0, width=0)
+# --------------------------------------------------
 # ① タイトルリンク（クリックで初期ページへリセット）
 st.markdown(
     """
