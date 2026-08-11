@@ -82,22 +82,6 @@ try:
   df = load_data()
   filtered_df = df.copy()
 
-  # シーズン列があればスライダーを表示
-  if "season" in df.columns:
-    unique_seasons = sorted([s for s in df["season"].dropna().unique()])
-    if len(unique_seasons) > 1:
-      start_season, end_season = st.select_slider(
-          "シーズン範囲を選択:",
-          options=unique_seasons,
-          value=(unique_seasons[0], unique_seasons[-1]),
-      )
-      start_idx = unique_seasons.index(start_season)
-      end_idx = unique_seasons.index(end_season)
-      selected_range = unique_seasons[start_idx : end_idx + 1]
-      filtered_df = filtered_df[filtered_df["season"].isin(selected_range)]
-    elif len(unique_seasons) == 1:
-      st.info(f"対象シーズン: **{unique_seasons[0]}**")
-
   # キーワード入力欄
   keyword = st.text_input(
       "検索キーワード（例: カイリュー、サイクル、最終1位）:"
@@ -117,11 +101,16 @@ try:
 
   # 記事リストのループ表示
   for idx, row in filtered_df.iterrows():
+    # シーズン表示（変な文字が入っている場合は無視して[M-4]固定にする安全ガード）
+    season_str = str(row.get("season", ""))
     season_prefix = (
-        f"[{row['season']}] "
-        if ("season" in row and pd.notna(row["season"]))
+        "[M-4] "
+        if "M-4" in season_str
+        else f"[{season_str}] "
+        if (season_str and len(season_str) < 10)
         else ""
     )
+
     display_title = highlight_text(str(row["title"]), keyword)
 
     st.subheader(f"{season_prefix}{display_title}")
