@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
 
 # --------------------------------------------------
-# 📊 Google アナリティクス (GA4) 埋め込み
+# 📊 Google アナリティクス (GA4) 埋め込み（決定版）
 # --------------------------------------------------
 GA_MEASUREMENT_ID = "G-8RE88QPRYD"
 
@@ -18,7 +18,9 @@ ga_html = f"""
   window.dataLayer = window.dataLayer || [];
   function gtag(){{dataLayer.push(arguments);}}
   gtag('js', new Date());
-  gtag('config', '{GA_MEASUREMENT_ID}');
+  gtag('config', '{GA_MEASUREMENT_ID}', {{
+      'cookie_flags': 'SameSite=None;Secure'
+  }});
 </script>
 """
 components.html(ga_html, height=0, width=0)
