@@ -3,8 +3,11 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# 画面設定
-st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
+# 画面設定（ブラウザのタブ名）
+st.set_page_config(
+    page_title="ポケモンチャンピオンズ構築記事全文検索システム",
+    layout="centered",
+)
 
 # --------------------------------------------------
 # 📊 GA4 Measurement Protocol (サーバーサイド直接送信)
@@ -22,7 +25,7 @@ def track_page_view():
         "events": [{
             "name": "page_view",
             "params": {
-                "page_title": "ポケモン構築記事検索",
+                "page_title": "ポケモンチャンピオンズ構築記事全文検索システム",
                 "page_location": "https://pokemon-search.streamlit.app/",
             },
         }],
@@ -45,7 +48,7 @@ st.markdown(
     """
     <h1>
         <a href="/" target="_self" style="color: inherit; text-decoration: none;">
-            🔍 ポケモン構築記事 検索
+            🔍 ポケモンチャンピオンズ構築記事全文検索システム
         </a>
     </h1>
     """,
