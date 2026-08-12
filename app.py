@@ -39,7 +39,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.write("キーワード入力で記事のタイトル・本文から一括検索できます。")
+st.write("シーズン指定やキーワード入力で記事のタイトル・本文から一括検索できます。")
 
 
 # キーワードハイライト関数
@@ -82,6 +82,18 @@ try:
   df = load_data()
   filtered_df = df.copy()
 
+  # シーズン選択プルダウン（CSV内のデータから自動生成）
+  if "season" in df.columns:
+    unique_seasons = sorted([str(s) for s in df["season"].dropna().unique()])
+    season_options = ["すべて"] + unique_seasons
+
+    selected_season = st.selectbox(
+        "シーズンを選択:", options=season_options, index=0
+    )
+
+    if selected_season != "すべて":
+      filtered_df = filtered_df[filtered_df["season"] == selected_season]
+
   # キーワード入力欄
   keyword = st.text_input(
       "検索キーワード（例: カイリュー、サイクル、最終1位）:"
@@ -101,16 +113,11 @@ try:
 
   # 記事リストのループ表示
   for idx, row in filtered_df.iterrows():
-    # シーズン表示（変な文字が入っている場合は無視して[M-4]固定にする安全ガード）
-    season_str = str(row.get("season", ""))
     season_prefix = (
-        "[M-4] "
-        if "M-4" in season_str
-        else f"[{season_str}] "
-        if (season_str and len(season_str) < 10)
+        f"[{row['season']}] "
+        if ("season" in row and pd.notna(row["season"]))
         else ""
     )
-
     display_title = highlight_text(str(row["title"]), keyword)
 
     st.subheader(f"{season_prefix}{display_title}")
