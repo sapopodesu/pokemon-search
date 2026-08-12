@@ -82,17 +82,20 @@ try:
   df = load_data()
   filtered_df = df.copy()
 
-  # シーズン選択プルダウン（CSV内のデータから自動生成）
+  # 複数シーズン（期間）選択ボックス
   if "season" in df.columns:
     unique_seasons = sorted([str(s) for s in df["season"].dropna().unique()])
-    season_options = ["すべて"] + unique_seasons
 
-    selected_season = st.selectbox(
-        "シーズンを選択:", options=season_options, index=0
+    selected_seasons = st.multiselect(
+        "対象のシーズン（期間）を選択:",
+        options=unique_seasons,
+        default=unique_seasons,  # 初期状態は全選択
     )
 
-    if selected_season != "すべて":
-      filtered_df = filtered_df[filtered_df["season"] == selected_season]
+    if selected_seasons:
+      filtered_df = filtered_df[filtered_df["season"].isin(selected_seasons)]
+    else:
+      filtered_df = filtered_df.iloc[0:0]  # 選択なし時は0件表示
 
   # キーワード入力欄
   keyword = st.text_input(
