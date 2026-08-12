@@ -1,29 +1,40 @@
 import re
 import pandas as pd
+import requests
 import streamlit as st
-import streamlit.components.v1 as components
 
 # 画面設定
 st.set_page_config(page_title="ポケモン構築記事検索", layout="centered")
 
 # --------------------------------------------------
-# 📊 Google アナリティクス (GA4) 埋め込み（決定版）
+# 📊 GA4 Measurement Protocol (サーバーサイド直接送信)
 # --------------------------------------------------
 GA_MEASUREMENT_ID = "G-8RE88QPRYD"
+API_SECRET = "ここに取得したAPI秘密鍵を貼り付け"
 
-ga_html = f"""
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){{dataLayer.push(arguments);}}
-  gtag('js', new Date());
-  gtag('config', '{GA_MEASUREMENT_ID}', {{
-      'cookie_flags': 'SameSite=None;Secure'
-  }});
-</script>
-"""
-components.html(ga_html, height=0, width=0)
+
+def track_page_view():
+  """アプリが開かれたときにGA4へアクセスデータを直接POST送信する"""
+  if API_SECRET and API_SECRET != "ここに取得したAPI秘密鍵を貼り付け":
+    url = f"https://www.google-analytics.com/mp/collect?measurement_id={GA_MEASUREMENT_ID}&api_secret={API_SECRET}"
+    payload = {
+        "client_id": "streamlit_user",
+        "events": [{
+            "name": "page_view",
+            "params": {
+                "page_title": "ポケモン構築記事検索",
+                "page_location": "https://pokemon-search.streamlit.app/",
+            },
+        }],
+    }
+    try:
+      requests.post(url, json=payload, timeout=2)
+    except Exception:
+      pass
+
+
+# ページ読み込み時にトラッキング実行
+track_page_view()
 
 # --------------------------------------------------
 # 🔍 ポケモン構築記事 検索アプリ メイン処理
@@ -84,20 +95,48 @@ try:
   df = load_data()
   filtered_df = df.copy()
 
-  # 複数シーズン（期間）選択ボックス
+  # --------------------------------------------------
+  # 📅 期間選択 (プルダウン2つを横並び)
+  # --------------------------------------------------
   if "season" in df.columns:
     unique_seasons = sorted([str(s) for s in df["season"].dropna().unique()])
 
-    selected_seasons = st.multiselect(
-        "対象のシーズン（期間）を選択:",
-        options=unique_seasons,
-        default=unique_seasons,  # 初期状態は全選択
-    )
+    if len(unique_seasons) > 0:
+      st.write("**対象の期間を選択:**")
+      col1, col2, col3 = st.columns([5, 1, 5])
 
-    if selected_seasons:
-      filtered_df = filtered_df[filtered_df["season"].isin(selected_seasons)]
-    else:
-      filtered_df = filtered_df.iloc[0:0]  # 選択なし時は0件表示
+      with col1:
+        start_season = st.selectbox(
+            "開始シーズン",
+            options=unique_seasons,
+            index=0,  # 一番最初のシーズン
+            label_visibility="collapsed",
+        )
+
+      with col2:
+        st.markdown(
+            "<p style='text-align: center; font-size: 20px;"
+            " margin-top: 5px;'>〜</p>",
+            unsafe_allow_html=True,
+        )
+
+      with col3:
+        end_season = st.selectbox(
+            "終了シーズン",
+            options=unique_seasons,
+            index=len(unique_seasons) - 1,  # 一番新しいシーズン
+            label_visibility="collapsed",
+        )
+
+      # 選択された範囲に含まれるシーズンを抽出
+      start_idx = unique_seasons.index(start_season)
+      end_idx = unique_seasons.index(end_season)
+
+      # 逆順で選ばれても安全に対応する処理
+      min_idx, max_idx = min(start_idx, end_idx), max(start_idx, end_idx)
+      selected_range = unique_seasons[min_idx : max_idx + 1]
+
+      filtered_df = filtered_df[filtered_df["season"].isin(selected_range)]
 
   # キーワード入力欄
   keyword = st.text_input(
