@@ -43,14 +43,14 @@ track_page_view()
 # 🔍 ポケモン構築記事 検索アプリ メイン処理
 # --------------------------------------------------
 
-# タイトル
+# タイトル（サイズを小さく控えめに指定）
 st.markdown(
     """
-    <h1>
+    <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; font-weight: 600;">
         <a href="/" target="_self" style="color: inherit; text-decoration: none;">
             🔍 ポケモンチャンピオンズ構築記事全文検索システム
         </a>
-    </h1>
+    </h3>
     """,
     unsafe_allow_html=True,
 )
